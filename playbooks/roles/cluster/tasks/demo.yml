@@ -21,7 +21,8 @@
 # infos.msg[0].ID ==> first id
 # infos.msg[0].Name ==> first name
 
-- set_fact:
+- name: Setting host facts
+  set_fact:
     info_id: "{{infos.msg[0].ID}}"
   when: infos is not failed and infos.msg|length == 1
 ...
