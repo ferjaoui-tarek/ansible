@@ -1,0 +1,24 @@
+env_name: "prod"
+version: "1.2.0"
+
+receivers:
+  - name: 'no-receiver'
+  - name: 'WTF_EXPLOITATION'
+    email_configs: 
+    - to: 'list-test@test.com'
+      headers:
+        subject: '[Test][PROD] [% (index .Alerts 0).Annotations.summary %]'
+    - to: 'list-test2@test.com'
+      headers:
+        subject: '[Test][PROD] [% (index .Alerts 0).Annotations.summary %]' 
+  - name: 'PROD-test'
+    email_configs:
+      - to: 'list-test3@test.com'
+        headers:
+          subject: '[Test][PROD] firing ALERT'
+        html: |
+          [% if gt(len.Alerts.Firing) 0 %]
+          <p>
+          You have the following firing alerts
+          </p>
+          [% end %]

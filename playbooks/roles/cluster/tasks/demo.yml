@@ -1,0 +1,27 @@
+---
+- name: check list from api
+  uri:
+    url: "{{api_url}}/info_list"
+    headers:
+      authorization: "baarer {{KEY}}"
+    method: GET
+    body_format: "json"
+    status_code: 200, 404
+  register: info_list
+  when: DEMOOK
+  
+- name: check existence of info base on 'toto'
+  debug:
+    msg: "{{ info_list.json.infos| json_query(info_list }}"
+  vars: 
+    info_list: "[? name=='toto'].{ID: id, IP: fixedip, Name: name}"
+  register: infos
+
+# infos.msg|length ==> nombre de resultat
+# infos.msg[0].ID ==> first id
+# infos.msg[0].Name ==> first name
+
+- set_fact:
+    info_id: "{{infos.msg[0].ID}}"
+  when: infos is not failed and infos.msg|length == 1
+...

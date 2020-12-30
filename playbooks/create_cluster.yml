@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: localhost
+  gather_facts: no
+  vars_files:
+    - roles/cluster/defaults/main.yml
+    - "{{playbook_dir}}/group_vars/{{env_name|lower }}_{{env_type|lower }}.yml"
+  vars:
+    working_dir: "{{playbook_dir}}/roles/cluster/terraform"
+  roles:
+    - {role: cluster, action: "create", tags: test, cluster_type: "test", when: "'consul' in clusters" }
+...

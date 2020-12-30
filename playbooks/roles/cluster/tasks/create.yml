@@ -1,0 +1,66 @@
+---
+- name: "Create terraform deirectorie"
+  file:
+    path: "{{ playbook_dir }}/.terraform/{{ item }}"
+    state: directory
+  loop:
+    - plans
+    - vars
+    - logs
+
+- name: Write terraform variables file 
+  copy:
+    content: |
+      az=         "test"
+      env_name=   "prd"
+    dest: "{{ playbook_dir }}/.terraform/vars/{{env_name|lower }}.tfvars"
+
+- block:
+  - name: initializing terraofrm working directory
+    command: 
+      terraform -chdir="{{ working_dir }}" init \
+      -backend-config region={{s3_region}} \
+      -backend-config endpoint={{s3_endpoint}} \
+      -backend-config bucket={{s3_bucket}} \
+      -backend-config key="_terraform/nodes/Deployment/cluster.tfstate" 
+    register: terraform_init
+    changed_when: false
+
+  - name: terraform plan
+    command: 
+      terraform -chdir="{{ working_dir }}" plan \
+      -var-file {{working_dir}}/.terraform/vars/cluster_{{env_name|lower }}.tfvars"
+    register: terraform_plan
+    changed_when: not "No changes. Infrastruture is up-to-date." in terraform_plan.stdout
+    failed_when: terraform_plan.rc == 1
+    retries: 3
+    until: not terraform_plan.failed
+
+  - name: debug plan logs
+    copy: 
+      content: "{{ terraform_plan.stdout }}"
+      dest: "{{ playbook_dir }}/.terraform/logs/cluster_{{env_name|lower }}.plan.log"
+    changed_when: terraform_plan.changed
+
+  - name: Apply terraform actions 
+    command: 
+       terraform -chdir="{{ working_dir }}" apply \
+       -auto-approuve=true \
+       -var-file {{working_dir}}/.terraform/vars/cluster_{{env_name|lower }}.tfvars"
+    when: terraform_plan.changed
+    register: terraform_apply
+    retries: 3
+    until: not terraform_apply.failed
+
+  - name: Debug Apply logs  
+    copy: 
+      content: "{{ terraform_apply.stdout }}"
+      dest: "{{ playbook_dir }}/.terraform/logs/cluster_{{env_name|lower }}.apply.log"
+    changed_when: terraform_apply.changed
+
+  environment:
+    ACCOUNT_ID: "toto"
+    CLIENT_ID: "xxx"
+    CLIENT_SECRET: "yyyy"
+  
+...
